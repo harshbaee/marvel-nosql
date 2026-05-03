@@ -1,0 +1,205 @@
+<%- include('partials/header') %>
+
+<div class="page-header">
+  <div>
+    <h1 class="page-title">MCU Statistics Dashboard</h1>
+    <p class="page-subtitle">Box office, ratings & leaderboards across all phases</p>
+  </div>
+  <a href="/" class="btn btn-secondary">← Back</a>
+</div>
+
+<!-- KPI row -->
+<div class="kpi-row">
+  <div class="kpi-card">
+    <div class="kpi-icon">🎬</div>
+    <div class="kpi-value" id="kpi-movies">—</div>
+    <div class="kpi-label">Total Movies</div>
+  </div>
+  <div class="kpi-card kpi-green">
+    <div class="kpi-icon">💰</div>
+    <div class="kpi-value" id="kpi-boxoffice">—</div>
+    <div class="kpi-label">Total Box Office</div>
+  </div>
+  <div class="kpi-card kpi-red">
+    <div class="kpi-icon">🏦</div>
+    <div class="kpi-value" id="kpi-budget">—</div>
+    <div class="kpi-label">Total Budget</div>
+  </div>
+  <div class="kpi-card kpi-yellow">
+    <div class="kpi-icon">⭐</div>
+    <div class="kpi-value" id="kpi-rating">—</div>
+    <div class="kpi-label">Avg Rating</div>
+  </div>
+</div>
+
+<!-- Leaderboards row -->
+<h2 class="section-title">🏆 Leaderboards</h2>
+<div class="leaderboards-grid">
+
+  <div class="card leaderboard-card">
+    <h3 class="lb-title">⭐ Top Rated</h3>
+    <ol class="lb-list" id="lb-rated"></ol>
+  </div>
+
+  <div class="card leaderboard-card">
+    <h3 class="lb-title">💰 Highest Grossing</h3>
+    <ol class="lb-list" id="lb-grossing"></ol>
+  </div>
+
+  <div class="card leaderboard-card">
+    <h3 class="lb-title">👁 Most Viewed</h3>
+    <ol class="lb-list" id="lb-viewed"></ol>
+  </div>
+
+  <div class="card leaderboard-card">
+    <h3 class="lb-title">📈 Best ROI</h3>
+    <ol class="lb-list" id="lb-roi"></ol>
+  </div>
+
+</div>
+
+<!-- Charts -->
+<h2 class="section-title">📊 Charts</h2>
+<div class="charts-grid">
+
+  <div class="card chart-card chart-wide">
+    <h3 class="chart-title">Box Office vs Budget by Movie</h3>
+    <canvas id="chart-boxoffice"></canvas>
+  </div>
+
+  <div class="card chart-card chart-wide">
+    <h3 class="chart-title">Average Rating per Movie</h3>
+    <canvas id="chart-ratings"></canvas>
+  </div>
+
+  <div class="card chart-card">
+    <h3 class="chart-title">Movies per Phase</h3>
+    <canvas id="chart-phases"></canvas>
+  </div>
+
+  <div class="card chart-card">
+    <h3 class="chart-title">Box Office by Phase ($M)</h3>
+    <canvas id="chart-phase-bo"></canvas>
+  </div>
+
+  <div class="card chart-card chart-wide">
+    <h3 class="chart-title">Top Directors (by movie count)</h3>
+    <canvas id="chart-directors"></canvas>
+  </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+<script>
+const PHASE_COLORS = {
+  'Phase 1': '#6366f1',
+  'Phase 2': '#f59e0b',
+  'Phase 3': '#10b981',
+  'Phase 4': '#ef4444',
+  'Phase 5': '#ec4899',
+};
+const PALETTE = ['#6366f1','#f59e0b','#10b981','#ef4444','#3b82f6','#8b5cf6','#ec4899','#14b8a6','#f97316','#84cc16'];
+
+function fmt(val) {
+  if (val >= 1000) return `$${(val/1000).toFixed(1)}B`;
+  return `$${val}M`;
+}
+
+function buildLeaderboard(listId, items, formatVal) {
+  const ol = document.getElementById(listId);
+  ol.innerHTML = items.map((item, i) => `
+    <li class="lb-item">
+      <span class="lb-rank rank-${i+1}">${i+1}</span>
+      <span class="lb-name">${item.title} <span class="lb-year">(${item.year})</span></span>
+      <span class="lb-val">${formatVal(item.value)}</span>
+    </li>`).join('');
+}
+
+async function loadStats() {
+  const data = await fetch('/api/stats').then(r => r.json());
+
+  // KPIs
+  document.getElementById('kpi-movies').textContent    = data.totalMovies;
+  document.getElementById('kpi-boxoffice').textContent = fmt(data.totalBoxOffice);
+  document.getElementById('kpi-budget').textContent    = fmt(data.totalBudget);
+  document.getElementById('kpi-rating').textContent    = data.overallAvgRating + ' / 5';
+
+  // Leaderboards
+  buildLeaderboard('lb-rated',    data.topRated,        v => `⭐ ${v}`);
+  buildLeaderboard('lb-grossing', data.highestGrossing, v => fmt(v));
+  buildLeaderboard('lb-viewed',   data.mostViewed,      v => `${v} views`);
+  buildLeaderboard('lb-roi',      data.bestROI,         v => `${v}%`);
+
+  // Box office vs budget grouped bar
+  const boLabels  = data.boxOfficeTimeline.map(m => m.title.length > 16 ? m.title.slice(0,14)+'…' : m.title);
+  new Chart(document.getElementById('chart-boxoffice'), {
+    type: 'bar',
+    data: {
+      labels: boLabels,
+      datasets: [
+        { label: 'Box Office ($M)', data: data.boxOfficeTimeline.map(m => m.boxOffice),
+          backgroundColor: '#10b981cc', borderColor: '#10b981', borderWidth:1, borderRadius:4 },
+        { label: 'Budget ($M)',     data: data.boxOfficeTimeline.map(m => m.budget),
+          backgroundColor: '#ef4444cc', borderColor: '#ef4444', borderWidth:1, borderRadius:4 },
+      ]
+    },
+    options: { responsive:true, plugins:{ legend:{ position:'top' } }, scales:{ y:{ beginAtZero:true } } }
+  });
+
+  // Ratings bar
+  const rLabels = data.ratingsChart.map(m => m.title.length > 16 ? m.title.slice(0,14)+'…' : m.title);
+  new Chart(document.getElementById('chart-ratings'), {
+    type: 'bar',
+    data: {
+      labels: rLabels,
+      datasets: [{ label: 'Avg Rating', data: data.ratingsChart.map(m => m.avg),
+        backgroundColor: '#6366f1cc', borderColor: '#6366f1', borderWidth:1, borderRadius:4 }]
+    },
+    options: { responsive:true, plugins:{ legend:{ display:false } }, scales:{ y:{ min:0, max:5, ticks:{ stepSize:1 } } } }
+  });
+
+  // Phase pie
+  const phaseKeys = Object.keys(data.phaseCounts);
+  new Chart(document.getElementById('chart-phases'), {
+    type: 'doughnut',
+    data: {
+      labels: phaseKeys,
+      datasets: [{ data: Object.values(data.phaseCounts),
+        backgroundColor: phaseKeys.map(k => PHASE_COLORS[k] || '#888'), borderWidth:2 }]
+    },
+    options: { responsive:true, plugins:{ legend:{ position:'bottom' } } }
+  });
+
+  // Phase box office bar
+  const phaseBoKeys = Object.keys(data.phaseBoxOffice);
+  new Chart(document.getElementById('chart-phase-bo'), {
+    type: 'bar',
+    data: {
+      labels: phaseBoKeys,
+      datasets: [{ label: 'Box Office ($M)', data: Object.values(data.phaseBoxOffice),
+        backgroundColor: phaseBoKeys.map(k => PHASE_COLORS[k] || '#888'),
+        borderRadius:6, borderWidth:0 }]
+    },
+    options: { responsive:true, plugins:{ legend:{ display:false } }, scales:{ y:{ beginAtZero:true } } }
+  });
+
+  // Directors horizontal bar (top 10)
+  const dirEntries = Object.entries(data.directorCounts).sort((a,b)=>b[1]-a[1]).slice(0,10);
+  new Chart(document.getElementById('chart-directors'), {
+    type: 'bar',
+    data: {
+      labels: dirEntries.map(d => d[0]),
+      datasets: [{ label: 'Movies directed', data: dirEntries.map(d => d[1]),
+        backgroundColor: PALETTE, borderRadius:6 }]
+    },
+    options: {
+      indexAxis: 'y', responsive:true,
+      plugins:{ legend:{ display:false } },
+      scales:{ x:{ beginAtZero:true, ticks:{ stepSize:1 } } }
+    }
+  });
+}
+
+loadStats();
+</script>
+<%- include('partials/footer') %>

@@ -1,0 +1,254 @@
+<%- include('partials/header') %>
+
+<div class="page-header">
+  <div>
+    <h1 class="page-title">MCU Movie Collection</h1>
+    <p class="page-subtitle">Browse, rate and manage every Marvel Cinematic Universe film</p>
+  </div>
+  <button class="btn btn-primary" id="btn-add-movie">＋ Add Movie</button>
+</div>
+
+<!-- Search & Filter -->
+<div class="search-bar card">
+  <div class="search-row">
+    <div class="input-group search-input-group">
+      <label for="search-input">Search</label>
+      <input type="text" id="search-input" placeholder="Title, director or cast…" autocomplete="off"/>
+    </div>
+    <div class="input-group">
+      <label for="filter-phase">Phase</label>
+      <select id="filter-phase">
+        <option value="all">All phases</option>
+        <option value="1">Phase 1</option>
+        <option value="2">Phase 2</option>
+        <option value="3">Phase 3</option>
+        <option value="4">Phase 4</option>
+        <option value="5">Phase 5</option>
+      </select>
+    </div>
+    <button class="btn btn-secondary" id="btn-clear">Clear</button>
+  </div>
+</div>
+
+<!-- Main layout -->
+<div class="main-layout">
+
+  <!-- Movie list -->
+  <aside class="list-panel card">
+    <h2 class="panel-title">Movies <span class="badge" id="movie-count">0</span></h2>
+    <ul id="movie-list" class="movie-list">
+      <li class="list-placeholder">Loading…</li>
+    </ul>
+  </aside>
+
+  <!-- Detail panel -->
+  <section class="detail-panel card" id="detail-panel">
+
+    <div class="detail-placeholder" id="detail-placeholder">
+      <span class="placeholder-icon">🎬</span>
+      <p>Select a movie to view its details</p>
+    </div>
+
+    <div id="detail-content" style="display:none;">
+
+      <!-- Poster + info hero -->
+      <div class="detail-hero">
+        <div class="poster-wrap">
+          <img id="detail-poster" src="" alt="Movie poster" onerror="this.style.display='none';document.getElementById('poster-fallback').style.display='flex'"/>
+          <div id="poster-fallback" class="poster-fallback" style="display:none;">🎬</div>
+        </div>
+        <div class="detail-hero-info">
+          <div class="detail-top">
+            <div>
+              <span id="detail-phase-badge" class="phase-badge"></span>
+              <h2 id="detail-title" class="detail-title"></h2>
+              <p id="detail-director" class="detail-director"></p>
+            </div>
+            <div class="detail-actions">
+              <button class="btn btn-accent" id="btn-rate">★ Rate</button>
+              <button class="btn btn-edit"   id="btn-edit">✏ Edit</button>
+              <button class="btn btn-danger" id="btn-delete">🗑 Delete</button>
+            </div>
+          </div>
+
+          <div class="detail-stars-row">
+            <div class="stars-display" id="detail-stars"></div>
+            <span class="rating-text" id="detail-rating-text"></span>
+          </div>
+
+          <p id="detail-description" class="detail-description"></p>
+        </div>
+      </div>
+
+      <!-- Spec grid -->
+      <div class="spec-grid">
+        <div class="spec-card">
+          <div class="spec-icon">📅</div>
+          <div class="spec-label">Year</div>
+          <div class="spec-value" id="detail-year"></div>
+        </div>
+        <div class="spec-card">
+          <div class="spec-icon">⏱</div>
+          <div class="spec-label">Runtime</div>
+          <div class="spec-value" id="detail-runtime"></div>
+        </div>
+        <div class="spec-card highlight-green">
+          <div class="spec-icon">💰</div>
+          <div class="spec-label">Box Office</div>
+          <div class="spec-value" id="detail-boxoffice"></div>
+        </div>
+        <div class="spec-card">
+          <div class="spec-icon">🏦</div>
+          <div class="spec-label">Budget</div>
+          <div class="spec-value" id="detail-budget"></div>
+        </div>
+        <div class="spec-card highlight-blue">
+          <div class="spec-icon">📈</div>
+          <div class="spec-label">ROI</div>
+          <div class="spec-value" id="detail-roi"></div>
+        </div>
+        <div class="spec-card">
+          <div class="spec-icon">👁</div>
+          <div class="spec-label">Page Views</div>
+          <div class="spec-value" id="detail-views"></div>
+        </div>
+        <div class="spec-card">
+          <div class="spec-icon">🎬</div>
+          <div class="spec-label">MCU Order</div>
+          <div class="spec-value" id="detail-mcuorder"></div>
+        </div>
+        <div class="spec-card">
+          <div class="spec-icon">🗳</div>
+          <div class="spec-label">Votes</div>
+          <div class="spec-value" id="detail-votes"></div>
+        </div>
+      </div>
+
+      <!-- Cast -->
+      <div class="cast-section">
+        <h4 class="cast-title">Cast</h4>
+        <div class="cast-tags" id="detail-cast"></div>
+      </div>
+
+    </div>
+  </section>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     MODAL: Add / Edit Movie
+═══════════════════════════════════════════════════════════════ -->
+<div class="modal-overlay" id="modal-movie" style="display:none;">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="modal-movie-title">Add New Movie</h3>
+      <button class="modal-close" id="modal-movie-close">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div id="form-error" class="form-error" style="display:none;"></div>
+      <div class="form-grid">
+        <div class="input-group full-col">
+          <label for="f-title">Title *</label>
+          <input type="text" id="f-title" placeholder="e.g. Avengers: Endgame"/>
+        </div>
+        <div class="input-group">
+          <label for="f-year">Year *</label>
+          <input type="number" id="f-year" placeholder="e.g. 2019" min="2008" max="2030"/>
+        </div>
+        <div class="input-group">
+          <label for="f-phase">Phase *</label>
+          <select id="f-phase">
+            <option value="">Select…</option>
+            <option>1</option><option>2</option><option>3</option><option>4</option><option>5</option>
+          </select>
+        </div>
+        <div class="input-group">
+          <label for="f-mcuorder">MCU Order *</label>
+          <input type="number" id="f-mcuorder" placeholder="e.g. 22" min="1"/>
+        </div>
+        <div class="input-group">
+          <label for="f-runtime">Runtime (min)</label>
+          <input type="number" id="f-runtime" placeholder="e.g. 181" min="1"/>
+        </div>
+        <div class="input-group full-col">
+          <label for="f-director">Director *</label>
+          <input type="text" id="f-director" placeholder="e.g. Anthony and Joe Russo"/>
+        </div>
+        <div class="input-group">
+          <label for="f-budget">Budget ($M)</label>
+          <input type="number" id="f-budget" placeholder="e.g. 356" min="0"/>
+        </div>
+        <div class="input-group">
+          <label for="f-boxoffice">Box Office ($M)</label>
+          <input type="number" id="f-boxoffice" placeholder="e.g. 2799" min="0"/>
+        </div>
+        <div class="input-group full-col">
+          <label for="f-cast">Cast (comma-separated)</label>
+          <input type="text" id="f-cast" placeholder="e.g. Robert Downey Jr., Chris Evans"/>
+        </div>
+        <div class="input-group full-col">
+          <label for="f-poster">Poster URL</label>
+          <input type="text" id="f-poster" placeholder="https://image.tmdb.org/t/p/w500/…"/>
+        </div>
+        <div class="input-group full-col">
+          <label for="f-description">Description</label>
+          <textarea id="f-description" rows="3" placeholder="Brief synopsis…"></textarea>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" id="modal-movie-cancel">Cancel</button>
+      <button class="btn btn-primary"   id="modal-movie-save">Save Movie</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     MODAL: Rate
+═══════════════════════════════════════════════════════════════ -->
+<div class="modal-overlay" id="modal-rate" style="display:none;">
+  <div class="modal modal-sm">
+    <div class="modal-header">
+      <h3>Rate this Movie</h3>
+      <button class="modal-close" id="modal-rate-close">&times;</button>
+    </div>
+    <div class="modal-body center-body">
+      <p class="rate-movie-name" id="rate-movie-name"></p>
+      <div class="star-picker" id="star-picker">
+        <span class="star-pick" data-val="1">★</span>
+        <span class="star-pick" data-val="2">★</span>
+        <span class="star-pick" data-val="3">★</span>
+        <span class="star-pick" data-val="4">★</span>
+        <span class="star-pick" data-val="5">★</span>
+      </div>
+      <p class="star-pick-label" id="star-pick-label">Click a star to rate</p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" id="modal-rate-cancel">Cancel</button>
+      <button class="btn btn-accent"    id="modal-rate-save">Submit</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     MODAL: Delete
+═══════════════════════════════════════════════════════════════ -->
+<div class="modal-overlay" id="modal-delete" style="display:none;">
+  <div class="modal modal-sm">
+    <div class="modal-header">
+      <h3>Confirm Deletion</h3>
+      <button class="modal-close" id="modal-delete-close">&times;</button>
+    </div>
+    <div class="modal-body">
+      <p>Delete <strong id="delete-movie-name"></strong>?</p>
+      <p class="text-muted">This action cannot be undone.</p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" id="modal-delete-cancel">Cancel</button>
+      <button class="btn btn-danger"    id="modal-delete-confirm">Delete</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast" class="toast" style="display:none;"></div>
+<script src="/js/main.js"></script>
+<%- include('partials/footer') %>

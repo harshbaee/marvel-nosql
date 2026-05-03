@@ -4,6 +4,25 @@ A full-stack MVC web application built with **Node.js + Express + MongoDB Atlas*
 
 ---
 
+## Screenshots
+
+### 🎬 Collection Page
+![Collection Page](collection_page.png)
+
+### 📊 Statistics Dashboard
+![Statistics Dashboard](stats_dashboard.png)
+
+### 📈 Box Office Chart
+![Box Office Chart](chart_boxoffice.png)
+
+### 🥧 Phase Charts
+![Phase Charts](charts_phase.png)
+
+### ➕ Add Movie Modal
+![Add Modal](add_modal.png)
+
+---
+
 ## Features
 
 - **Browse** all MCU films ordered by release (#1 → #36)

@@ -1,0 +1,676 @@
+<%- include('partials/header') %>
+
+<div class="page-header">
+  <div>
+    <h1 class="page-title">MCU Analytics Dashboard</h1>
+    <p class="page-subtitle">Deep insights into the Marvel Cinematic Universe</p>
+  </div>
+  <a href="/" class="btn btn-secondary">← Back</a>
+</div>
+
+<!-- KPI row -->
+<div class="kpi-row">
+  <div class="kpi-card"><div class="kpi-value" id="kpi-movies">—</div><div class="kpi-label">Total Films</div><div class="kpi-icon">🎬</div></div>
+  <div class="kpi-card kpi-green"><div class="kpi-value" id="kpi-boxoffice">—</div><div class="kpi-label">Total Box Office</div><div class="kpi-icon">💰</div></div>
+  <div class="kpi-card kpi-red"><div class="kpi-value" id="kpi-budget">—</div><div class="kpi-label">Total Budget</div><div class="kpi-icon">🏦</div></div>
+  <div class="kpi-card kpi-yellow"><div class="kpi-value" id="kpi-rating">—</div><div class="kpi-label">Avg Rating</div><div class="kpi-icon">⭐</div></div>
+</div>
+
+<!-- Insight strip -->
+<div class="insight-strip" id="insight-strip"></div>
+
+<!-- Leaderboards -->
+<h2 class="section-title">🏆 Leaderboards</h2>
+<div class="leaderboards-grid">
+  <div class="card leaderboard-card"><h3 class="lb-title">⭐ Top Rated</h3><ol class="lb-list" id="lb-rated"></ol></div>
+  <div class="card leaderboard-card"><h3 class="lb-title">💰 Highest Grossing</h3><ol class="lb-list" id="lb-grossing"></ol></div>
+  <div class="card leaderboard-card"><h3 class="lb-title">👁 Most Viewed</h3><ol class="lb-list" id="lb-viewed"></ol></div>
+  <div class="card leaderboard-card"><h3 class="lb-title">📈 Best ROI</h3><ol class="lb-list" id="lb-roi"></ol></div>
+</div>
+
+<!-- Charts -->
+<h2 class="section-title">📊 Analytical Visualizations</h2>
+<div class="charts-grid">
+
+  <div class="card chart-card chart-wide">
+    <div class="chart-head">
+      <div>
+        <h3 class="chart-title">💸 Hits, Flops & Blockbusters</h3>
+        <p class="chart-sub">Budget vs Box Office · diagonal = break-even · upper-left quadrant = profit kings</p>
+      </div>
+      <div class="chart-controls" id="scatter-controls">
+        <button class="chip active" data-phase="all">All Phases</button>
+      </div>
+    </div>
+    <div id="chart-boxoffice" class="d3-chart"></div>
+  </div>
+
+  <div class="card chart-card chart-wide">
+    <div class="chart-head">
+      <div>
+        <h3 class="chart-title">🎯 Does Quality Predict Success?</h3>
+        <p class="chart-sub">Rating vs Box Office · trend line shows correlation · quadrants reveal critic darlings, crowd pleasers, flops</p>
+      </div>
+    </div>
+    <div id="chart-ratings" class="d3-chart"></div>
+  </div>
+
+  <div class="card chart-card">
+    <div class="chart-head">
+      <div>
+        <h3 class="chart-title">📦 Box Office Range by Phase</h3>
+        <p class="chart-sub">Min · median · max per phase · how consistent is each era?</p>
+      </div>
+    </div>
+    <div id="chart-phases" class="d3-chart"></div>
+  </div>
+
+  <div class="card chart-card">
+    <div class="chart-head">
+      <div>
+        <h3 class="chart-title">💹 Profit Timeline</h3>
+        <p class="chart-sub">Profit ($) per film in release order · bars above zero = hit, below = loss · colored by phase</p>
+      </div>
+    </div>
+    <div id="chart-phase-bo" class="d3-chart"></div>
+  </div>
+
+  <div class="card chart-card chart-wide">
+    <div class="chart-head">
+      <div>
+        <h3 class="chart-title">🎬 Director Universe</h3>
+        <p class="chart-sub">Circle packing · area = films directed · who shaped the MCU</p>
+      </div>
+    </div>
+    <div id="chart-directors" class="d3-chart"></div>
+  </div>
+
+</div>
+
+<div id="d3-tip" class="d3-tip"></div>
+
+<style>
+.chart-head{display:flex;justify-content:space-between;align-items:flex-start;gap:1rem;margin-bottom:.6rem;flex-wrap:wrap;}
+.chart-sub{color:#7070a0;font-size:.74rem;letter-spacing:.04em;margin:.15rem 0 0;text-transform:uppercase;font-weight:500;}
+.chart-controls{display:flex;gap:.35rem;flex-wrap:wrap;}
+.chart-controls .chip{
+  background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);color:#9a9ac0;
+  padding:.3rem .7rem;border-radius:999px;font-size:.7rem;letter-spacing:.05em;
+  text-transform:uppercase;font-weight:600;cursor:pointer;transition:all .2s;
+}
+.chart-controls .chip:hover{color:#fff;border-color:rgba(226,54,54,.4);}
+.chart-controls .chip.active{background:rgba(226,54,54,.18);border-color:#e23636;color:#fff;
+  box-shadow:0 0 12px rgba(226,54,54,.3);}
+
+.d3-chart{width:100%;min-height:380px;position:relative;}
+.d3-chart svg{width:100%;height:100%;overflow:visible;display:block;}
+.d3-chart text{font-family:'Inter',sans-serif;fill:#9a9ac0;font-size:11px;}
+.d3-chart .axis path,.d3-chart .axis line{stroke:rgba(255,255,255,.08);}
+.d3-chart .axis-label{fill:#7070a0;font-size:10px;letter-spacing:.1em;text-transform:uppercase;font-weight:600;}
+.d3-chart .grid line{stroke:rgba(255,255,255,.04);stroke-dasharray:2 3;}
+.d3-chart .grid path{stroke:none;}
+.d3-chart .annotation{fill:#7070a0;font-size:9.5px;font-style:italic;font-weight:500;letter-spacing:.05em;}
+.d3-chart .breakeven{stroke:rgba(245,197,24,.4);stroke-width:1.2;stroke-dasharray:6 4;}
+
+.insight-strip{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:.8rem;
+  margin:1rem 0 1.5rem;
+}
+.insight-pill{
+  background:linear-gradient(135deg,rgba(18,18,42,.7),rgba(13,13,31,.7));
+  border:1px solid rgba(255,255,255,.06);border-left:3px solid var(--c,#e23636);
+  border-radius:10px;padding:.7rem .9rem;backdrop-filter:blur(8px);
+}
+.insight-pill .ip-label{font-size:.65rem;letter-spacing:.12em;text-transform:uppercase;color:#7070a0;font-weight:600;}
+.insight-pill .ip-val{font-size:1.05rem;color:#f0f0ff;font-weight:700;margin-top:.15rem;line-height:1.2;}
+.insight-pill .ip-sub{font-size:.7rem;color:#9a9ac0;margin-top:.1rem;}
+
+.d3-tip{
+  position:fixed;pointer-events:none;opacity:0;z-index:9999;
+  background:linear-gradient(180deg,rgba(18,18,42,.97),rgba(10,10,25,.97));
+  border:1px solid rgba(226,54,54,.4);border-radius:10px;padding:.75rem .9rem;
+  font:600 .78rem/1.5 'Inter',sans-serif;color:#f0f0ff;
+  box-shadow:0 12px 40px rgba(0,0,0,.7),0 0 24px rgba(226,54,54,.2);
+  backdrop-filter:blur(14px);transition:opacity .18s ease;max-width:280px;min-width:200px;
+}
+.d3-tip strong{color:#fff;font-size:.88rem;display:block;margin-bottom:.4rem;letter-spacing:.01em;}
+.d3-tip .row{display:flex;justify-content:space-between;gap:1rem;color:#b8b8d8;padding:.08rem 0;}
+.d3-tip .row span:last-child{color:#fff;font-weight:700;}
+.d3-tip .phase-pill{display:inline-block;padding:.12rem .55rem;border-radius:999px;font-size:.62rem;
+  letter-spacing:.08em;text-transform:uppercase;margin-top:.45rem;font-weight:700;}
+.d3-tip .verdict{font-size:.7rem;margin-top:.4rem;padding-top:.4rem;border-top:1px solid rgba(255,255,255,.08);
+  color:#9a9ac0;font-style:italic;font-weight:500;}
+
+.phase-legend{display:flex;flex-wrap:wrap;gap:.6rem;justify-content:center;margin-top:.6rem;}
+.phase-legend .pl-item{display:flex;align-items:center;gap:.4rem;font-size:.7rem;color:#9a9ac0;
+  letter-spacing:.05em;text-transform:uppercase;font-weight:600;cursor:pointer;transition:opacity .2s;}
+.phase-legend .pl-item.dim{opacity:.3;}
+.phase-legend .pl-dot{width:10px;height:10px;border-radius:50%;box-shadow:0 0 8px currentColor;}
+</style>
+
+<script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"></script>
+<script>
+const PHASE_COLORS = {
+  'Phase 1':'#8b5cf6','Phase 2':'#f59e0b','Phase 3':'#10b981',
+  'Phase 4':'#ef4444','Phase 5':'#ec4899','Phase 6':'#3b82f6',
+};
+const PALETTE = ['#e23636','#f5c518','#8b5cf6','#10b981','#3b82f6','#ec4899','#f97316','#14b8a6','#84cc16','#fb7185'];
+
+const tip = d3.select('#d3-tip');
+function showTip(html,e){ tip.html(html).style('opacity',1); moveTip(e); }
+function moveTip(e){
+  const pad=14,w=tip.node().offsetWidth,h=tip.node().offsetHeight;
+  let x=e.clientX+pad,y=e.clientY+pad;
+  if(x+w>innerWidth) x=e.clientX-w-pad;
+  if(y+h>innerHeight) y=e.clientY-h-pad;
+  tip.style('left',x+'px').style('top',y+'px');
+}
+function hideTip(){ tip.style('opacity',0); }
+
+function fmtMoney(v){ return v>=1000 ? '$'+(v/1000).toFixed(2)+'B' : '$'+Math.round(v)+'M'; }
+function fmtShort(v){ return v>=1000 ? (v/1000).toFixed(1)+'B' : v+'M'; }
+function animateCount(el,target,opts={}){
+  const dur=1500,start=performance.now(),isMoney=!!opts.money,suffix=opts.suffix||'';
+  function step(now){
+    const t=Math.min(1,(now-start)/dur),eased=1-Math.pow(1-t,3),v=target*eased;
+    el.textContent = isMoney ? fmtMoney(Math.round(v)) : (Math.round(v*10)/10)+suffix;
+    if(t<1) requestAnimationFrame(step); else el.textContent = isMoney ? fmtMoney(target) : target+suffix;
+  } requestAnimationFrame(step);
+}
+function phaseFromYear(y){
+  if(y<=2012) return 'Phase 1'; if(y<=2015) return 'Phase 2';
+  if(y<=2019) return 'Phase 3'; if(y<=2022) return 'Phase 4';
+  if(y<=2025) return 'Phase 5'; return 'Phase 6';
+}
+
+/* ─── 1. SCATTER: Budget vs Box Office with break-even line ─── */
+let scatterState = { phase:'all', data:[] };
+function renderScatter(){
+  const el = document.getElementById('chart-boxoffice');
+  el.innerHTML='';
+  const W=el.clientWidth,H=420,M={t:20,r:30,b:55,l:70};
+  const iW=W-M.l-M.r,iH=H-M.t-M.b;
+
+  const all = scatterState.data.filter(d=>d.budget>0 && d.boxOffice>0);
+  const data = scatterState.phase==='all' ? all : all.filter(d=>(d.phase||phaseFromYear(d.year))===scatterState.phase);
+  if(!data.length) return;
+
+  const svg = d3.select(el).append('svg').attr('viewBox',`0 0 ${W} ${H}`);
+  const defs = svg.append('defs');
+  const f = defs.append('filter').attr('id','sGlow').attr('x','-50%').attr('y','-50%').attr('width','200%').attr('height','200%');
+  f.append('feGaussianBlur').attr('stdDeviation','3').attr('result','b');
+  const mg=f.append('feMerge');mg.append('feMergeNode').attr('in','b');mg.append('feMergeNode').attr('in','SourceGraphic');
+
+  const g = svg.append('g').attr('transform',`translate(${M.l},${M.t})`);
+
+  const maxV = d3.max(all, d=>Math.max(d.budget,d.boxOffice))*1.1;
+  const x = d3.scaleLog().domain([10, maxV]).range([0,iW]).clamp(true);
+  const y = d3.scaleLog().domain([10, maxV]).range([iH,0]).clamp(true);
+  const rs = d3.scaleSqrt().domain([0, d3.max(all,d=>d.boxOffice/Math.max(d.budget,1))]).range([5,18]);
+
+  g.append('g').attr('class','grid').call(d3.axisLeft(y).tickSize(-iW).tickFormat('').ticks(6));
+
+  // Break-even diagonal
+  g.append('line').attr('class','breakeven')
+    .attr('x1',x(10)).attr('y1',y(10)).attr('x2',x(maxV)).attr('y2',y(maxV));
+  g.append('text').attr('class','annotation')
+    .attr('x',x(maxV)-6).attr('y',y(maxV)+14).attr('text-anchor','end')
+    .text('break-even (1× budget)');
+
+  // 2x and 3x lines
+  [2,3].forEach(mult=>{
+    g.append('line').attr('class','breakeven').attr('opacity',.4)
+      .attr('x1',x(10)).attr('y1',y(10*mult)).attr('x2',x(maxV/mult)).attr('y2',y(maxV));
+    g.append('text').attr('class','annotation').attr('opacity',.6)
+      .attr('x',x(maxV/mult)-4).attr('y',y(maxV)+14).attr('text-anchor','end').text(mult+'× profit');
+  });
+
+  g.append('g').attr('class','axis').attr('transform',`translate(0,${iH})`)
+    .call(d3.axisBottom(x).ticks(5,d=>fmtShort(d)));
+  g.append('g').attr('class','axis').call(d3.axisLeft(y).ticks(5,d=>fmtShort(d)));
+  g.append('text').attr('class','axis-label').attr('x',iW).attr('y',iH+42).attr('text-anchor','end').text('BUDGET ($) →');
+  g.append('text').attr('class','axis-label').attr('transform','rotate(-90)').attr('y',-52).attr('text-anchor','end').text('BOX OFFICE ($) →');
+
+  const dots = g.selectAll('.dot').data(data).enter().append('circle')
+    .attr('cx', d=>x(d.budget)).attr('cy', d=>y(d.boxOffice))
+    .attr('r', 0)
+    .attr('fill', d => PHASE_COLORS[d.phase||phaseFromYear(d.year)] || '#888')
+    .attr('fill-opacity', .35)
+    .attr('stroke', d => PHASE_COLORS[d.phase||phaseFromYear(d.year)] || '#888')
+    .attr('stroke-width', 1.5)
+    .style('filter','url(#sGlow)').style('cursor','pointer')
+    .on('mouseover', function(e,d){
+      d3.select(this).transition().duration(150).attr('fill-opacity',.7).attr('stroke-width',2.5);
+      const roi = ((d.boxOffice-d.budget)/d.budget*100);
+      const mult = (d.boxOffice/d.budget);
+      const ph = d.phase||phaseFromYear(d.year);
+      const verdict = roi>=300?'🚀 Mega blockbuster' : roi>=100?'💎 Major hit' : roi>=0?'✅ Profitable' : '💸 Loss';
+      showTip(`<strong>${d.title} <span style="color:#7070a0;font-weight:500">(${d.year})</span></strong>
+        <div class="row"><span>Budget</span><span>${fmtMoney(d.budget)}</span></div>
+        <div class="row"><span>Box Office</span><span>${fmtMoney(d.boxOffice)}</span></div>
+        <div class="row"><span>Profit</span><span style="color:${roi>=0?'#10b981':'#ef4444'}">${fmtMoney(d.boxOffice-d.budget)}</span></div>
+        <div class="row"><span>Multiplier</span><span>${mult.toFixed(2)}×</span></div>
+        <div class="phase-pill" style="background:${PHASE_COLORS[ph]}33;color:${PHASE_COLORS[ph]};">${ph}</div>
+        <div class="verdict">${verdict} · ROI ${roi.toFixed(0)}%</div>`, e);
+    })
+    .on('mousemove',moveTip)
+    .on('mouseout', function(){
+      d3.select(this).transition().duration(150).attr('fill-opacity',.35).attr('stroke-width',1.5);
+      hideTip();
+    });
+  dots.transition().delay((d,i)=>i*25).duration(700).ease(d3.easeBackOut.overshoot(1.2))
+    .attr('r', d => rs(d.boxOffice/Math.max(d.budget,1)));
+
+  // Phase chips
+  const ctrl = d3.select('#scatter-controls');
+  if (ctrl.selectAll('.chip').size() === 1) {
+    const phases = [...new Set(all.map(d=>d.phase||phaseFromYear(d.year)))].sort();
+    phases.forEach(p=>{
+      ctrl.append('button').attr('class','chip').attr('data-phase',p)
+        .style('border-color', PHASE_COLORS[p]+'66').text(p);
+    });
+    ctrl.selectAll('.chip').on('click', function(){
+      ctrl.selectAll('.chip').classed('active', false);
+      d3.select(this).classed('active', true);
+      scatterState.phase = this.dataset.phase;
+      renderScatter();
+    });
+  }
+}
+
+/* ─── 2. QUALITY vs SUCCESS scatter with regression line ─── */
+function renderQualityVsSuccess(movies){
+  const el=document.getElementById('chart-ratings');
+  el.innerHTML='';
+  const W=el.clientWidth,H=420,M={t:30,r:30,b:55,l:70};
+  const iW=W-M.l-M.r,iH=H-M.t-M.b;
+
+  const data=movies.filter(m=>m.avg>0 && m.boxOffice>0);
+  if(!data.length) return;
+
+  const svg=d3.select(el).append('svg').attr('viewBox',`0 0 ${W} ${H}`);
+  const g=svg.append('g').attr('transform',`translate(${M.l},${M.t})`);
+
+  const x=d3.scaleLinear().domain([d3.min(data,d=>d.avg)-.2, 5]).range([0,iW]);
+  const y=d3.scaleLog().domain([Math.max(10,d3.min(data,d=>d.boxOffice)*.8), d3.max(data,d=>d.boxOffice)*1.1]).range([iH,0]);
+
+  // Compute medians for quadrants
+  const xMed=d3.median(data,d=>d.avg);
+  const yMed=d3.median(data,d=>d.boxOffice);
+
+  // Quadrant backgrounds
+  g.append('rect').attr('x',x(xMed)).attr('y',0).attr('width',iW-x(xMed)).attr('height',y(yMed))
+    .attr('fill','#10b981').attr('fill-opacity',.04);
+  g.append('rect').attr('x',0).attr('y',0).attr('width',x(xMed)).attr('height',y(yMed))
+    .attr('fill','#f59e0b').attr('fill-opacity',.04);
+  g.append('rect').attr('x',x(xMed)).attr('y',y(yMed)).attr('width',iW-x(xMed)).attr('height',iH-y(yMed))
+    .attr('fill','#8b5cf6').attr('fill-opacity',.04);
+  g.append('rect').attr('x',0).attr('y',y(yMed)).attr('width',x(xMed)).attr('height',iH-y(yMed))
+    .attr('fill','#ef4444').attr('fill-opacity',.04);
+
+  // Quadrant labels
+  g.append('text').attr('x',iW-8).attr('y',14).attr('text-anchor','end')
+    .attr('fill','#10b981').attr('font-size','10px').attr('font-weight','700').attr('letter-spacing','.1em').text('🏆 CROWD PLEASERS');
+  g.append('text').attr('x',8).attr('y',14)
+    .attr('fill','#f59e0b').attr('font-size','10px').attr('font-weight','700').attr('letter-spacing','.1em').text('💰 GUILTY PLEASURES');
+  g.append('text').attr('x',iW-8).attr('y',iH-8).attr('text-anchor','end')
+    .attr('fill','#8b5cf6').attr('font-size','10px').attr('font-weight','700').attr('letter-spacing','.1em').text('💎 CRITICS\' DARLINGS');
+  g.append('text').attr('x',8).attr('y',iH-8)
+    .attr('fill','#ef4444').attr('font-size','10px').attr('font-weight','700').attr('letter-spacing','.1em').text('⚠ FLOPS');
+
+  // Median crosshairs
+  g.append('line').attr('x1',x(xMed)).attr('x2',x(xMed)).attr('y1',0).attr('y2',iH)
+    .attr('stroke','rgba(255,255,255,.12)').attr('stroke-dasharray','3 3');
+  g.append('line').attr('x1',0).attr('x2',iW).attr('y1',y(yMed)).attr('y2',y(yMed))
+    .attr('stroke','rgba(255,255,255,.12)').attr('stroke-dasharray','3 3');
+
+  // Grid
+  g.append('g').attr('class','grid').call(d3.axisLeft(y).tickSize(-iW).tickFormat('').ticks(5));
+
+  // Linear regression (on log boxOffice)
+  const xs=data.map(d=>d.avg), ys=data.map(d=>Math.log10(d.boxOffice));
+  const n=xs.length, mx=d3.mean(xs), my=d3.mean(ys);
+  const slope=d3.sum(xs.map((v,i)=>(v-mx)*(ys[i]-my))) / d3.sum(xs.map(v=>(v-mx)**2));
+  const intercept=my-slope*mx;
+  // Correlation
+  const sx=Math.sqrt(d3.sum(xs.map(v=>(v-mx)**2))/n), sy=Math.sqrt(d3.sum(ys.map(v=>(v-my)**2))/n);
+  const r=d3.sum(xs.map((v,i)=>(v-mx)*(ys[i]-my)))/(n*sx*sy);
+  const xMin=d3.min(xs),xMax=5;
+  const trend=[[xMin, Math.pow(10, slope*xMin+intercept)],[xMax, Math.pow(10, slope*xMax+intercept)]];
+  g.append('line')
+    .attr('x1',x(trend[0][0])).attr('y1',y(trend[0][1]))
+    .attr('x2',x(trend[1][0])).attr('y2',y(trend[1][1]))
+    .attr('stroke','#f5c518').attr('stroke-width',2).attr('stroke-dasharray','5 4').attr('opacity',.7);
+
+  // Correlation badge
+  const corrStrength = Math.abs(r)>.6?'strong': Math.abs(r)>.3?'moderate':'weak';
+  g.append('text').attr('x',iW-8).attr('y',iH-26).attr('text-anchor','end')
+    .attr('fill','#f5c518').attr('font-size','11px').attr('font-weight','700')
+    .text(`correlation r = ${r.toFixed(2)} (${corrStrength})`);
+
+  // Axes
+  g.append('g').attr('class','axis').attr('transform',`translate(0,${iH})`)
+    .call(d3.axisBottom(x).ticks(6).tickFormat(d=>d+'★'));
+  g.append('g').attr('class','axis').call(d3.axisLeft(y).ticks(5,d=>fmtShort(d)));
+  g.append('text').attr('class','axis-label').attr('x',iW).attr('y',iH+42).attr('text-anchor','end').text('AUDIENCE RATING →');
+  g.append('text').attr('class','axis-label').attr('transform','rotate(-90)').attr('y',-52).attr('text-anchor','end').text('BOX OFFICE (log) →');
+
+  const defs=svg.append('defs');
+  const f=defs.append('filter').attr('id','qGlow').attr('x','-50%').attr('y','-50%').attr('width','200%').attr('height','200%');
+  f.append('feGaussianBlur').attr('stdDeviation','2.5').attr('result','b');
+  const mg=f.append('feMerge');mg.append('feMergeNode').attr('in','b');mg.append('feMergeNode').attr('in','SourceGraphic');
+
+  g.selectAll('.qdot').data(data).enter().append('circle')
+    .attr('cx',d=>x(d.avg)).attr('cy',d=>y(d.boxOffice)).attr('r',0)
+    .attr('fill', d => PHASE_COLORS[d.phase||phaseFromYear(d.year)]||'#888')
+    .attr('fill-opacity',.45).attr('stroke', d => PHASE_COLORS[d.phase||phaseFromYear(d.year)]||'#888').attr('stroke-width',1.5)
+    .style('filter','url(#qGlow)').style('cursor','pointer')
+    .on('mouseover', function(e,d){
+      d3.select(this).transition().duration(150).attr('fill-opacity',.85).attr('stroke-width',2.5);
+      const q = d.avg>=xMed && d.boxOffice>=yMed ? '🏆 Crowd pleaser'
+              : d.avg<xMed && d.boxOffice>=yMed ? '💰 Guilty pleasure'
+              : d.avg>=xMed && d.boxOffice<yMed ? '💎 Critics\' darling'
+              : '⚠ Flop';
+      showTip(`<strong>${d.title} <span style="color:#7070a0;font-weight:500">(${d.year})</span></strong>
+        <div class="row"><span>Rating</span><span>★ ${d.avg.toFixed(2)}</span></div>
+        <div class="row"><span>Box Office</span><span>${fmtMoney(d.boxOffice)}</span></div>
+        <div class="verdict">${q}</div>`, e);
+    })
+    .on('mousemove',moveTip)
+    .on('mouseout', function(){ d3.select(this).transition().duration(150).attr('fill-opacity',.45).attr('stroke-width',1.5); hideTip(); })
+    .transition().delay((d,i)=>i*20).duration(700).ease(d3.easeBackOut.overshoot(1.2)).attr('r',7);
+}
+
+/* ─── 3. PHASE BOXPLOT: box office range by phase ─── */
+function renderPhaseBoxplot(movies){
+  const el=document.getElementById('chart-phases');
+  el.innerHTML='';
+  const W=el.clientWidth,H=400,M={t:20,r:20,b:50,l:55};
+  const iW=W-M.l-M.r,iH=H-M.t-M.b;
+
+  const data=movies.filter(m=>m.boxOffice>0);
+  if(!data.length) return;
+  const phases=[...new Set(data.map(m=>m.phase||phaseFromYear(m.year)))].sort();
+  const stats=phases.map(p=>{
+    const vals=data.filter(m=>(m.phase||phaseFromYear(m.year))===p).map(m=>m.boxOffice).sort(d3.ascending);
+    return {
+      phase:p, n:vals.length, min:d3.min(vals), max:d3.max(vals),
+      q1:d3.quantile(vals,.25), median:d3.median(vals), q3:d3.quantile(vals,.75),
+      values:vals
+    };
+  });
+
+  const svg=d3.select(el).append('svg').attr('viewBox',`0 0 ${W} ${H}`);
+  const g=svg.append('g').attr('transform',`translate(${M.l},${M.t})`);
+  const x=d3.scaleBand().domain(phases).range([0,iW]).padding(.45);
+  const y=d3.scaleLinear().domain([0, d3.max(stats,d=>d.max)*1.1]).range([iH,0]);
+
+  g.append('g').attr('class','grid').call(d3.axisLeft(y).tickSize(-iW).tickFormat('').ticks(5));
+  g.append('g').attr('class','axis').attr('transform',`translate(0,${iH})`).call(d3.axisBottom(x));
+  g.append('g').attr('class','axis').call(d3.axisLeft(y).ticks(5).tickFormat(d=>fmtShort(d)));
+  g.append('text').attr('class','axis-label').attr('transform','rotate(-90)').attr('y',-42).attr('text-anchor','end').text('BOX OFFICE');
+
+  stats.forEach((s,i)=>{
+    const cx=x(s.phase)+x.bandwidth()/2, bw=x.bandwidth();
+    const col=PHASE_COLORS[s.phase]||'#888';
+
+    // whisker line
+    g.append('line').attr('x1',cx).attr('x2',cx).attr('y1',y(s.min)).attr('y2',y(s.max))
+      .attr('stroke',col).attr('stroke-width',1.5).attr('opacity',0)
+      .transition().delay(i*120).duration(500).attr('opacity',.8);
+
+    // min/max caps
+    [s.min,s.max].forEach(v=>{
+      g.append('line').attr('x1',cx-bw/4).attr('x2',cx+bw/4).attr('y1',y(v)).attr('y2',y(v))
+        .attr('stroke',col).attr('stroke-width',1.5).attr('opacity',0)
+        .transition().delay(i*120+200).duration(400).attr('opacity',.8);
+    });
+
+    // IQR box
+    g.append('rect').attr('x',cx-bw/2).attr('y',y(s.q3)).attr('width',bw)
+      .attr('height',0).attr('fill',col).attr('fill-opacity',.25)
+      .attr('stroke',col).attr('stroke-width',1.5).attr('rx',3)
+      .style('cursor','pointer')
+      .on('mouseover',(e)=>showTip(`<strong>${s.phase}</strong>
+        <div class="row"><span>Films</span><span>${s.n}</span></div>
+        <div class="row"><span>Highest</span><span>${fmtMoney(s.max)}</span></div>
+        <div class="row"><span>Q3 (75%)</span><span>${fmtMoney(s.q3)}</span></div>
+        <div class="row"><span>Median</span><span>${fmtMoney(s.median)}</span></div>
+        <div class="row"><span>Q1 (25%)</span><span>${fmtMoney(s.q1)}</span></div>
+        <div class="row"><span>Lowest</span><span>${fmtMoney(s.min)}</span></div>`,e))
+      .on('mousemove',moveTip).on('mouseout',hideTip)
+      .transition().delay(i*120+300).duration(600).ease(d3.easeCubicOut)
+      .attr('height', y(s.q1)-y(s.q3));
+
+    // median line
+    g.append('line').attr('x1',cx-bw/2).attr('x2',cx+bw/2).attr('y1',y(s.median)).attr('y2',y(s.median))
+      .attr('stroke',col).attr('stroke-width',3).attr('stroke-linecap','round')
+      .style('filter','drop-shadow(0 0 4px currentColor)')
+      .attr('opacity',0).transition().delay(i*120+800).duration(400).attr('opacity',1);
+
+    // individual film dots (jittered)
+    s.values.forEach((v,k)=>{
+      g.append('circle').attr('cx',cx + (Math.random()-.5)*bw*.5).attr('cy',y(v))
+        .attr('r',0).attr('fill',col).attr('fill-opacity',.6).attr('stroke','rgba(0,0,0,.3)').attr('stroke-width',.5)
+        .transition().delay(i*120+1100+k*40).duration(300).attr('r',2.5);
+    });
+  });
+}
+
+/* ─── 4. RELEASE CADENCE: films per year, stacked by phase ─── */
+function renderReleaseCadence(movies){
+  // Renamed conceptually to "Profit Timeline" — chronological diverging bars
+  const el=document.getElementById('chart-phase-bo');
+  el.innerHTML='';
+  const W=el.clientWidth,H=400,M={t:25,r:20,b:55,l:55};
+  const iW=W-M.l-M.r,iH=H-M.t-M.b;
+
+  const data=movies
+    .filter(m=>m.year && m.budget>0 && m.boxOffice>0)
+    .map(m=>({...m, profit:m.boxOffice-m.budget, phase:m.phase||phaseFromYear(m.year)}))
+    .sort((a,b)=>a.year-b.year || a.title.localeCompare(b.title));
+  if(!data.length) return;
+
+  const svg=d3.select(el).append('svg').attr('viewBox',`0 0 ${W} ${H}`);
+  const g=svg.append('g').attr('transform',`translate(${M.l},${M.t})`);
+
+  const x=d3.scaleBand().domain(data.map((_,i)=>i)).range([0,iW]).padding(.2);
+  const yMax=d3.max(data,d=>Math.abs(d.profit));
+  const y=d3.scaleLinear().domain([-yMax*1.05, yMax*1.05]).range([iH,0]);
+
+  // grid + zero line
+  g.append('g').attr('class','grid').call(d3.axisLeft(y).tickSize(-iW).tickFormat('').ticks(6));
+  g.append('line').attr('x1',0).attr('x2',iW).attr('y1',y(0)).attr('y2',y(0))
+    .attr('stroke','#f5c518').attr('stroke-width',1.2).attr('opacity',.7);
+  g.append('text').attr('x',iW-4).attr('y',y(0)-6).attr('text-anchor','end')
+    .attr('fill','#f5c518').attr('font-size','10px').attr('font-weight','700').text('break-even');
+
+  // year axis (sparse labels)
+  const years=data.map(d=>d.year);
+  const yearTicks=[]; let last=-1;
+  data.forEach((d,i)=>{ if(d.year!==last){ yearTicks.push({i,y:d.year}); last=d.year; } });
+  g.append('g').attr('class','axis').attr('transform',`translate(0,${iH})`)
+    .call(d3.axisBottom(x).tickValues(yearTicks.map(t=>t.i))
+      .tickFormat(i=>{
+        const t=yearTicks.find(t=>t.i===i); return t?t.y:'';
+      }));
+  g.append('g').attr('class','axis').call(d3.axisLeft(y).ticks(6).tickFormat(d=>{
+    const v=Math.abs(d); return (d<0?'-':'') + (v>=1000?(v/1000).toFixed(1)+'B':v+'M');
+  }));
+  g.append('text').attr('class','axis-label').attr('transform','rotate(-90)').attr('y',-44).attr('text-anchor','end').text('PROFIT / LOSS');
+
+  // bars
+  g.selectAll('.pbar').data(data).enter().append('rect')
+    .attr('x',(d,i)=>x(i)).attr('width',x.bandwidth())
+    .attr('y',y(0)).attr('height',0).attr('rx',2)
+    .attr('fill', d => PHASE_COLORS[d.phase]||'#888')
+    .attr('fill-opacity', d => d.profit>=0?.85:.55)
+    .attr('stroke', d => d.profit>=0 ? PHASE_COLORS[d.phase] : '#ef4444')
+    .attr('stroke-width', d => d.profit<0?1.2:0)
+    .style('cursor','pointer')
+    .on('mouseover',(e,d)=>{
+      const mult=d.boxOffice/d.budget;
+      const verdict = d.profit>=d.budget*3 ? '🚀 Mega blockbuster'
+                   : d.profit>=d.budget ? '💎 Major hit'
+                   : d.profit>=0 ? '✅ Profitable' : '💸 Loss';
+      showTip(`<strong>${d.title} <span style="color:#7070a0;font-weight:500">(${d.year})</span></strong>
+        <div class="row"><span>Budget</span><span>${fmtMoney(d.budget)}</span></div>
+        <div class="row"><span>Box Office</span><span>${fmtMoney(d.boxOffice)}</span></div>
+        <div class="row"><span>Profit</span><span style="color:${d.profit>=0?'#10b981':'#ef4444'}">${d.profit>=0?'+':''}${fmtMoney(d.profit)}</span></div>
+        <div class="row"><span>Multiplier</span><span>${mult.toFixed(2)}×</span></div>
+        <div class="phase-pill" style="background:${PHASE_COLORS[d.phase]}33;color:${PHASE_COLORS[d.phase]};">${d.phase}</div>
+        <div class="verdict">${verdict}</div>`,e);
+    })
+    .on('mousemove',moveTip).on('mouseout',hideTip)
+    .transition().delay((d,i)=>i*30).duration(700).ease(d3.easeCubicOut)
+    .attr('y', d => d.profit>=0 ? y(d.profit) : y(0))
+    .attr('height', d => Math.abs(y(d.profit)-y(0)));
+
+  // summary annotation
+  const totalProfit=d3.sum(data,d=>d.profit);
+  const wins=data.filter(d=>d.profit>0).length;
+  g.append('text').attr('x',0).attr('y',-8).attr('fill','#9a9ac0').attr('font-size','10px').attr('font-weight','600')
+    .attr('letter-spacing','.08em').attr('text-transform','uppercase')
+    .text(`${wins} of ${data.length} films profitable · net ${fmtMoney(totalProfit)}`);
+
+  const phases=[...new Set(data.map(d=>d.phase))].sort();
+  const legend=d3.select(el).append('div').attr('class','phase-legend');
+  legend.selectAll('div').data(phases).enter().append('div').attr('class','pl-item')
+    .html(p=>`<span class="pl-dot" style="background:${PHASE_COLORS[p]};color:${PHASE_COLORS[p]};"></span>${p}`);
+}
+
+/* ─── 5. CIRCLE PACK: Directors ─── */
+function renderDirectorPack(directorCounts){
+  const el=document.getElementById('chart-directors');
+  el.innerHTML='';
+  const W=el.clientWidth,H=480;
+  const entries=Object.entries(directorCounts).sort((a,b)=>b[1]-a[1]);
+  if(!entries.length) return;
+
+  const root=d3.hierarchy({children:entries.map(([n,c],i)=>({name:n,value:c,color:PALETTE[i%PALETTE.length]}))})
+    .sum(d=>d.value).sort((a,b)=>b.value-a.value);
+
+  d3.pack().size([W,H]).padding(8)(root);
+
+  const svg=d3.select(el).append('svg').attr('viewBox',`0 0 ${W} ${H}`);
+  const defs=svg.append('defs');
+  const f=defs.append('filter').attr('id','packGlow').attr('x','-50%').attr('y','-50%').attr('width','200%').attr('height','200%');
+  f.append('feGaussianBlur').attr('stdDeviation','4').attr('result','b');
+  const mg=f.append('feMerge');mg.append('feMergeNode').attr('in','b');mg.append('feMergeNode').attr('in','SourceGraphic');
+
+  const nodes=svg.selectAll('g').data(root.leaves()).enter().append('g')
+    .attr('transform', d=>`translate(${d.x},${d.y})`).style('cursor','pointer');
+
+  nodes.append('circle')
+    .attr('r',0).attr('fill', d=>d.data.color+'33').attr('stroke',d=>d.data.color).attr('stroke-width',1.5)
+    .style('filter','url(#packGlow)')
+    .on('mouseover', function(e,d){
+      d3.select(this).transition().duration(150).attr('fill', d.data.color+'66').attr('stroke-width',2.5);
+      showTip(`<strong>${d.data.name}</strong><div class="row"><span>Films directed</span><span>${d.data.value}</span></div><div class="row"><span>Share</span><span>${(d.data.value/root.value*100).toFixed(1)}%</span></div>`,e);
+    })
+    .on('mousemove',moveTip)
+    .on('mouseout', function(e,d){
+      d3.select(this).transition().duration(150).attr('fill', d.data.color+'33').attr('stroke-width',1.5); hideTip();
+    })
+    .transition().delay((d,i)=>i*30).duration(800).ease(d3.easeBackOut.overshoot(1.2)).attr('r',d=>d.r);
+
+  nodes.append('text').attr('text-anchor','middle').attr('dy','-.1em')
+    .attr('fill','#f0f0ff').attr('font-weight','700')
+    .attr('font-size', d=>Math.min(d.r*.35, 14)+'px')
+    .text(d => d.r>22 ? (d.data.name.split(' ').slice(-1)[0]) : '')
+    .style('pointer-events','none').style('opacity',0)
+    .transition().delay((d,i)=>i*30+500).duration(400).style('opacity',1);
+
+  nodes.append('text').attr('text-anchor','middle').attr('dy','1.1em')
+    .attr('fill','#f5c518').attr('font-weight','700')
+    .attr('font-size', d=>Math.min(d.r*.4,16)+'px')
+    .text(d => d.r>22 ? d.data.value : '')
+    .style('pointer-events','none').style('opacity',0)
+    .transition().delay((d,i)=>i*30+600).duration(400).style('opacity',1);
+}
+
+/* ─── Insight strip ─── */
+function renderInsights(data){
+  const strip=document.getElementById('insight-strip');
+  const movies=data.boxOfficeTimeline||[];
+  const profitable=movies.filter(m=>m.boxOffice>m.budget);
+  const profitPct=movies.length? Math.round(profitable.length/movies.length*100):0;
+
+  const withROI=movies.filter(m=>m.budget>0&&m.boxOffice>0).map(m=>({...m,roi:m.boxOffice/m.budget}));
+  const bestMult=withROI.sort((a,b)=>b.roi-a.roi)[0];
+  const biggest=[...movies].sort((a,b)=>(b.boxOffice||0)-(a.boxOffice||0))[0];
+  const avgGross = movies.length? d3.mean(movies,m=>m.boxOffice||0):0;
+
+  const phaseGross={};
+  movies.forEach(m=>{ const p=m.phase||phaseFromYear(m.year); phaseGross[p]=(phaseGross[p]||0)+(m.boxOffice||0); });
+  const topPhase=Object.entries(phaseGross).sort((a,b)=>b[1]-a[1])[0];
+
+  const items=[
+    {c:'#10b981', l:'Profitable Films', v:`${profitPct}%`, s:`${profitable.length} of ${movies.length}`},
+    {c:'#f5c518', l:'Highest Multiplier', v:bestMult? `${bestMult.roi.toFixed(1)}×`:'—', s:bestMult?.title||''},
+    {c:'#e23636', l:'Biggest Blockbuster', v:biggest?fmtMoney(biggest.boxOffice):'—', s:biggest?.title||''},
+    {c:'#8b5cf6', l:'Average Film Gross', v:fmtMoney(avgGross), s:'per release'},
+    {c:'#3b82f6', l:'Top Earning Phase', v:topPhase?topPhase[0]:'—', s:topPhase?fmtMoney(topPhase[1]):''},
+  ];
+  strip.innerHTML=items.map(i=>`<div class="insight-pill" style="--c:${i.c}"><div class="ip-label">${i.l}</div><div class="ip-val">${i.v}</div><div class="ip-sub">${i.s}</div></div>`).join('');
+}
+
+/* ─── Leaderboards ─── */
+function buildLeaderboard(id,items,fmt){
+  document.getElementById(id).innerHTML = items.map((it,i)=>`
+    <li class="lb-item"><span class="lb-rank rank-${i+1}">${i+1}</span>
+    <span class="lb-name">${it.title} <span class="lb-year">(${it.year})</span></span>
+    <span class="lb-val">${fmt(it.value)}</span></li>`).join('');
+}
+
+/* ─── BOOT ─── */
+async function loadStats(){
+  const data=await fetch('/api/stats').then(r=>r.json());
+  animateCount(document.getElementById('kpi-movies'),data.totalMovies);
+  animateCount(document.getElementById('kpi-boxoffice'),data.totalBoxOffice,{money:true});
+  animateCount(document.getElementById('kpi-budget'),data.totalBudget,{money:true});
+  animateCount(document.getElementById('kpi-rating'),data.overallAvgRating,{suffix:' / 5'});
+
+  buildLeaderboard('lb-rated',data.topRated,v=>`★ ${v}`);
+  buildLeaderboard('lb-grossing',data.highestGrossing,v=>fmtMoney(v));
+  buildLeaderboard('lb-viewed',data.mostViewed,v=>`${v} views`);
+  buildLeaderboard('lb-roi',data.bestROI,v=>`${v}%`);
+
+  renderInsights(data);
+  scatterState.data = data.boxOfficeTimeline||[];
+  renderScatter();
+  const ratingMap=new Map((data.ratingsChart||[]).map(r=>[r.title,r.avg]));
+  const enriched=(data.boxOfficeTimeline||[]).map(m=>({...m,avg:ratingMap.get(m.title)}));
+  renderQualityVsSuccess(enriched);
+  renderPhaseBoxplot(enriched);
+  renderReleaseCadence(enriched);
+  renderDirectorPack(data.directorCounts||{});
+}
+loadStats();
+
+let rT;
+addEventListener('resize',()=>{ clearTimeout(rT); rT=setTimeout(loadStats,300); });
+</script>
+
+<script>
+(function(){
+  function enhance(ol){
+    const items=[...ol.querySelectorAll('li')]; if(!items.length) return;
+    const vals=items.map(li=>{
+      const t=li.textContent.replace(/[,$]/g,''); const m=t.match(/([\d.]+)\s*(B|M|%)?\s*$/);
+      if(!m) return 0; let v=parseFloat(m[1]); if(m[2]==='B') v*=1000; return v;
+    });
+    const max=Math.max(...vals,1);
+    items.forEach((li,i)=>{
+      li.classList.add('lb-item'); if(i<3) li.classList.add('rank-'+(i+1));
+      li.style.setProperty('--fill',Math.round((vals[i]/max)*100)+'%');
+      requestAnimationFrame(()=>li.classList.add('fill'));
+    });
+  }
+  ['lb-rated','lb-grossing','lb-viewed','lb-roi'].forEach(id=>{
+    const ol=document.getElementById(id); if(!ol) return;
+    new MutationObserver(()=>enhance(ol)).observe(ol,{childList:true}); enhance(ol);
+  });
+})();
+</script>
+<%- include('partials/footer') %>

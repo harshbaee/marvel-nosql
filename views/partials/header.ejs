@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title><%= title %> — MarvelBase</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="/css/style.css"/>
+</head>
+<body>
+
+<!-- Cinematic background layer -->
+<div class="cosmic-bg" aria-hidden="true">
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+  <span class="particle" style="left:5%;top:20%;animation-duration:11s;animation-delay:-1s"></span>
+  <span class="particle" style="left:12%;top:80%;animation-duration:13s;animation-delay:-3s"></span>
+  <span class="particle" style="left:18%;top:45%;animation-duration:9s;animation-delay:-5s"></span>
+  <span class="particle" style="left:25%;top:65%;animation-duration:14s;animation-delay:-2s"></span>
+  <span class="particle" style="left:32%;top:30%;animation-duration:10s;animation-delay:-7s"></span>
+  <span class="particle" style="left:40%;top:75%;animation-duration:12s;animation-delay:-4s"></span>
+  <span class="particle" style="left:48%;top:15%;animation-duration:11s;animation-delay:-6s"></span>
+  <span class="particle" style="left:55%;top:55%;animation-duration:13s;animation-delay:-1s"></span>
+  <span class="particle" style="left:60%;top:85%;animation-duration:9s;animation-delay:-8s"></span>
+  <span class="particle" style="left:67%;top:25%;animation-duration:14s;animation-delay:-3s"></span>
+  <span class="particle" style="left:72%;top:70%;animation-duration:10s;animation-delay:-5s"></span>
+  <span class="particle" style="left:78%;top:40%;animation-duration:12s;animation-delay:-2s"></span>
+  <span class="particle" style="left:83%;top:90%;animation-duration:11s;animation-delay:-6s"></span>
+  <span class="particle" style="left:88%;top:18%;animation-duration:13s;animation-delay:-4s"></span>
+  <span class="particle" style="left:93%;top:62%;animation-duration:9s;animation-delay:-1s"></span>
+  <span class="particle" style="left:8%;top:50%;animation-duration:15s;animation-delay:-7s"></span>
+  <span class="particle" style="left:30%;top:10%;animation-duration:10s;animation-delay:-2s"></span>
+  <span class="particle" style="left:50%;top:95%;animation-duration:12s;animation-delay:-5s"></span>
+  <span class="particle" style="left:70%;top:5%;animation-duration:14s;animation-delay:-8s"></span>
+  <span class="particle" style="left:90%;top:35%;animation-duration:11s;animation-delay:-3s"></span>
+</div>
+
+<!-- Top progress bar -->
+<div class="page-progress" id="page-progress"></div>
+
+<nav class="navbar" id="main-navbar">
+  <div class="nav-brand">
+    <span class="nav-logo">⚡</span>
+    <span class="nav-title">MARVELBASE</span>
+  </div>
+  <div class="nav-center">
+    <a href="/" class="nav-link <%= title === 'MCU Collection' ? 'active' : '' %>">Collection</a>
+    <a href="/stats" class="nav-link <%= title === 'Statistics' ? 'active' : '' %>">Statistics</a>
+  </div>
+  <button class="theme-toggle" id="theme-toggle" title="Toggle light/dark mode">
+    <span class="theme-icon">🌙</span>
+  </button>
+</nav>
+
+<script>
+  // Navbar scroll shadow + page progress bar (visual only)
+  (function(){
+    const nav = document.getElementById('main-navbar');
+    const bar = document.getElementById('page-progress');
+    window.addEventListener('scroll', () => {
+      nav.classList.toggle('scrolled', window.scrollY > 100);
+    });
+    requestAnimationFrame(() => { bar.style.width = '30%'; });
+    window.addEventListener('load', () => {
+      bar.style.width = '100%';
+      setTimeout(() => { bar.style.opacity = '0'; }, 400);
+    });
+  })();
+</script>
+
+<main class="container">

@@ -4,8 +4,7 @@ A full-stack MCU film database with a Marvel Studios–inspired cinematic UI, ad
 
 Built with **Node.js**, **Express**, **MongoDB Atlas**, **EJS**, and **D3.js**.
 
-![Collection Page](https://github.com/user-attachments/assets/8137621a-ca48-44f3-821c-403edd58b77
-)
+![Collection Page](https://github.com/user-attachments/assets/7dbe6f8f-c117-4141-91c6-c5d9cbeae345)
 
 ---
 

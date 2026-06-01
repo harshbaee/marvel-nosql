@@ -4,7 +4,8 @@ A full-stack MCU film database with a Marvel Studios–inspired cinematic UI, ad
 
 Built with **Node.js**, **Express**, **MongoDB Atlas**, **EJS**, and **D3.js**.
 
-![Collection Page](collection_page.png)
+![Collection Page](https://github.com/user-attachments/assets/8137621a-ca48-44f3-821c-403edd58b77
+)
 
 ---
 
@@ -26,27 +27,32 @@ Built with **Node.js**, **Express**, **MongoDB Atlas**, **EJS**, and **D3.js**.
 ### Collection / Home
 The cinematic library view with phase filters, search, and movie cards.
 
-![Collection](collection_page.png)
+![Collection](https://github.com/user-attachments/assets/d524998e-f8ee-4993-8862-0d260262a896
+)
 
 ### Add / Edit Movie
 Themed modal for creating and editing films.
 
-![Add Movie Modal](add_modal.png)
+![Add Movie Modal](https://github.com/user-attachments/assets/d3148a25-e6de-453b-aca9-2d2f9b72895c
+)
 
 ### Analytics Dashboard
 Insight strip + 5 D3.js charts revealing the MCU's data story.
 
-![Stats Dashboard](stats_dashboard.png)
+![Stats Dashboard](https://github.com/user-attachments/assets/d4708c9f-13d4-4db6-9598-e3f964a19051
+)
 
 ### Hits, Flops & Blockbusters
 Log–log scatter of budget vs. box office with break-even and profit-multiplier guides.
 
-![Box Office Chart](chart_boxoffice.png)
+![Box Office Chart](https://github.com/user-attachments/assets/a4e6cb55-3928-47ce-a2a5-46620341807b
+)
 
 ### Phase Box-and-Whisker
 Distribution of ratings across each MCU phase.
 
-![Phase Chart](charts_phase.png)
+![Phase Chart](https://github.com/user-attachments/assets/2d459265-466e-46cb-b89b-4927e5206587
+)
 
 ---
 
